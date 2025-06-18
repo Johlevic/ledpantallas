@@ -2,10 +2,12 @@
 
 namespace App\Notifications;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 class NotificacionDePrueba extends Notification
 {
@@ -15,7 +17,7 @@ class NotificacionDePrueba extends Notification
      * Create a new notification instance.
      */
 
-  
+
 
     public array $datos;
     public string $destinatario;
@@ -41,56 +43,44 @@ class NotificacionDePrueba extends Notification
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
-    {
-        if ($this->destinatario === 'cliente') {
-            return (new MailMessage)
-                ->subject('Gracias por tu solicitud de presupuesto')
-                ->greeting('Hola ' . ($this->datos['nombre'] ?? 'Cliente') . ',')
-                ->line('Hemos recibido tu solicitud de presupuesto con estos datos:')
-                ->line('Dimensiones: ' . ($this->datos['largo'] ?? 'N/A') . ' mm x ' . ($this->datos['alto'] ?? 'N/A') . ' mm')
-                ->line('Área: ' . number_format($this->datos['areaM2'] ?? 0, 2) . ' m²')
-                ->line('Tipo de instalación: ' . ucfirst($this->datos['tipo'] ?? 'N/A'))
-                ->line('Tipo de LED: ' . strtoupper($this->datos['tipoLed'] ?? 'N/A'))
-                ->line('Precio estimado: $' . number_format($this->datos['precioFinal'] ?? 0, 2) . ' USD')
-                ->line('Nos pondremos en contacto contigo pronto para seguir con tu proyecto.')
-                ->salutation('¡Gracias por confiar en nosotros!');
+   public function toMail(object $notifiable)
+{
+    $asunto = 'Solicitud de presupuesto LED';
 
-        } elseif ($this->destinatario === 'admin') {
-            return (new MailMessage)
-                ->subject('Nueva solicitud de presupuesto recibida')
-                ->greeting('Hola administrador,')
-                ->line('Se ha recibido una nueva solicitud de presupuesto con los siguientes datos:')
-                ->line('Cliente: ' . ($this->datos['nombre'] ?? 'N/A'))
-                ->line('Email: ' . ($this->datos['email'] ?? 'N/A'))
-                ->line('Teléfono: ' . ($this->datos['telefono'] ?? 'No especificado'))
-                ->line('Empresa: ' . ($this->datos['empresa'] ?? 'No especificada'))
-                ->line('Dimensiones: ' . ($this->datos['largo'] ?? 'N/A') . ' mm x ' . ($this->datos['alto'] ?? 'N/A') . ' mm')
-                ->line('Área: ' . number_format($this->datos['areaM2'] ?? 0, 2) . ' m²')
-                ->line('Tipo de instalación: ' . ucfirst($this->datos['tipo'] ?? 'N/A'))
-                ->line('Tipo de LED: ' . strtoupper($this->datos['tipoLed'] ?? 'N/A'))
-                ->line('Precio estimado: $' . number_format($this->datos['precioFinal'] ?? 0, 2) . ' USD')
-                ->line('Comentario: ' . ($this->datos['comentario'] ?? 'Sin comentario'))
-                ->salutation('Saludos,')
-                ->line('Por favor revisa y procesa esta solicitud.');
-        
-        } elseif ($this->destinatario === 'yo') {
-            return (new MailMessage)
-                ->subject('Aviso: Nuevo pedido recibido')
-                ->greeting('Hola,')
-                ->line('Se ha registrado un nuevo pedido con estos datos:')
-                ->line('Cliente: ' . ($this->datos['nombre'] ?? 'N/A'))
-                ->line('Email: ' . ($this->datos['email'] ?? 'N/A'))
-                ->line('Precio estimado: $' . number_format($this->datos['precioFinal'] ?? 0, 2) . ' USD')
-                ->line('Por favor revisa la solicitud lo antes posible.')
-                ->salutation('Saludos,');
-        }
-
-        // Por defecto, si no coincide el destinatario:
-        return (new MailMessage)
-            ->subject('Nueva notificación')
-            ->line('Hay una nueva notificación.');
+    switch ($this->destinatario) {
+        case 'cliente':
+            $vistaCorreo = 'emails.cliente';
+            $vistaPdf = 'pdf.presupuesto_cliente';
+            break;
+        case 'admin':
+            $vistaCorreo = 'emails.admin';
+            $vistaPdf = 'pdf.presupuesto_admin';
+            break;
+        case 'yo':
+            $vistaCorreo = 'emails.col';
+            $vistaPdf = 'pdf.presupuesto_col';
+            break;
+        default:
+            $vistaCorreo = 'emails.cliente';
+            $vistaPdf = 'pdf.presupuesto_cliente';
+            break;
     }
+
+    $pdf = Pdf::loadView($vistaPdf, $this->datos);
+    $pdfName = 'Presupuesto-' . Str::slug($this->datos['nombre'] ?? 'cliente') . '-' . $this->destinatario . '.pdf';
+    $tempPath = storage_path("app/{$pdfName}");
+    $pdf->save($tempPath);
+
+    return (new \Illuminate\Notifications\Messages\MailMessage)
+        ->subject($asunto)
+        ->view($vistaCorreo, ['datos' => $this->datos])
+        ->attach($tempPath, [
+            'as' => $pdfName,
+            'mime' => 'application/pdf',
+        ]);
+}
+
+
 
 
     /**

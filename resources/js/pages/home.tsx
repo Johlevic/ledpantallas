@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiAlertCircle, FiCheckCircle, FiLoader } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+
 import Layout from '../layouts/layout';
+
 
 // Hook para detectar modo móvil
 const useIsMobile = () => {
@@ -89,6 +91,7 @@ const Home: React.FC = () => {
 
     return (
         <Layout>
+
             <Toaster position="top-right" />
             <section className="min-h-screen w-full">
                 <div className="container mx-auto px-4 py-10 md:py-24">
@@ -236,6 +239,8 @@ const Home: React.FC = () => {
                         </div>
 
                         {/* Texto descriptivo */}
+
+
                         <div className={`${isMobile ? 'order-1 mb-8 w-full' : 'order-2 w-1/2'} space-y-6 text-center lg:text-left`}>
                             <motion.h1
                                 initial={{ opacity: 0, x: -20 }}
