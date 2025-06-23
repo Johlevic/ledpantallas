@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class detallePedido extends Model
 {
-     use HasFactory;
+    use HasFactory;
 
     protected $table = 'detalle_pedidos';
     protected $primaryKey = 'id_detalle_pedido';
@@ -18,6 +18,15 @@ class detallePedido extends Model
         'cantidad',
         'precio_unitario',
         'subtotal',
+    ];
+
+    /**
+     * Casts para asegurar tipos correctos al serializar JSON.
+     */
+    protected $casts = [
+        'cantidad' => 'integer',
+        'precio_unitario' => 'float',
+        'subtotal' => 'float',
     ];
 
     public function pedido()

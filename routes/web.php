@@ -3,11 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\productoPDFController;
 use Illuminate\Support\Facades\Cache;
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
@@ -32,3 +30,14 @@ Route::get('/pdf-download/{key}', function ($key) {
         ->header('Content-Type', 'application/pdf')
         ->header('Content-Disposition', 'attachment');
 })->name('pdf.download');
+
+Route::get('/', function () {
+    return view('app');
+});
+
+Route::get('/{any}', function () {
+    return view('app');
+})->where('any', '.*');
+
+Route::get('/api/productos/{id}/exportar-pdf', [productoPDFController::class, 'exportarPDF']);
+

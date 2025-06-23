@@ -1,11 +1,21 @@
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiAlertCircle, FiCheckCircle, FiLoader } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-
 import Layout from '../layouts/layout';
 
+// Definición de tipos
+interface ProductoCalculadora {
+    id_producto: number;
+    nombre: string;
+    tipo_instalacion: 'interior' | 'exterior';
+    tipo: '3p' | '5p' | '8p';
+    precio_por_m2: number;
+    precio_oferta?: number;
+    stock: number;
+}
 
 // Hook para detectar modo móvil
 const useIsMobile = () => {
@@ -42,18 +52,41 @@ const Home: React.FC = () => {
     const [selectedInstallation, setSelectedInstallation] = useState(installationTypes[0]);
     const [selectedLed, setSelectedLed] = useState(ledTypes[0]);
     const [isLoading, setIsLoading] = useState(false);
-
+    const [productos, setProductos] = useState<ProductoCalculadora[]>([]);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isCalculating, setIsCalculating] = useState(false);
     const navigate = useNavigate();
     const isMobile = useIsMobile();
 
+    // Obtener productos al cargar el componente
+    useEffect(() => {
+        const fetchProductos = async () => {
+            try {
+                const response = await axios.get('http://localhost:8000/api/calculadora/productos');
+
+                // Validar estructura de respuesta
+                if (response.data && response.data.success && Array.isArray(response.data.data)) {
+                    setProductos(response.data.data);
+                } else {
+                    throw new Error('Formato de respuesta inválido');
+                }
+            } catch (err) {
+                setError('Error al cargar los productos. Intente recargar.');
+                console.error('Error al obtener productos:', err);
+            } finally {
+                setIsLoadingProducts(false);
+            }
+        };
+
+        fetchProductos();
+    }, []);
+
     const handleCalcular = async () => {
+        // Validaciones básicas
         if (!largo || !alto) {
             toast.error('Por favor complete todos los campos', {
                 icon: <FiAlertCircle className="text-red-500" />,
-                style: {
-                    background: '#fff',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                },
             });
             return;
         }
@@ -62,36 +95,65 @@ const Home: React.FC = () => {
         const numAlto = parseFloat(alto);
 
         if (numLargo <= 0 || numAlto <= 0) {
-            toast.error('Las dimensiones deben ser mayores a cero', {
-                icon: <FiAlertCircle className="text-red-500" />,
-                style: {
-                    background: '#fff',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                },
-            });
+            toast.error('Las dimensiones deben ser mayores a cero');
             return;
         }
 
+        // Verificar que los productos estén cargados
+        if (isLoadingProducts) {
+            toast.error('Espere mientras cargamos los productos');
+            return;
+        }
+
+        if (error) {
+            toast.error('Error al cargar productos. Intente recargar.');
+            return;
+        }
+        setIsCalculating(true); // Activar el estado de carga
+
         setIsLoading(true);
 
-        // Simulación de carga asíncrona
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const areaM2 = numLargo * numAlto;
 
-        navigate('/precio', {
-            state: {
-                largo: numLargo,
-                alto: numAlto,
-                tipoLed: selectedLed.value,
-                tipo: selectedInstallation.value,
-            },
-        });
+            // Buscar producto que coincida exactamente con los filtros
+            const productoEncontrado = productos.find((p) => p.tipo_instalacion === selectedInstallation.value && p.tipo === selectedLed.value);
 
-        setIsLoading(false);
+            if (!productoEncontrado) {
+                toast.error(`No hay productos disponibles para ${selectedInstallation.value} con LED ${selectedLed.value}`);
+                return;
+            }
+
+            // MODIFICACIÓN: Siempre usar precio_por_m2, ignorando precio_oferta
+            const precioBase = productoEncontrado.precio_por_m2;
+            const precioTotal = precioBase * areaM2;
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
+            // Navegar a la página de resultados
+            navigate('/precio', {
+                state: {
+                    dimensiones: { largo: numLargo, alto: numAlto },
+                    producto: productoEncontrado,
+                    calculo: {
+                        areaM2,
+                        precioPorM2: productoEncontrado.precio_por_m2,
+                        precioTotal,
+                        tipoInstalacion: selectedInstallation.value,
+                        tipoLed: selectedLed.value,
+                    },
+                },
+            });
+        } catch (error) {
+            console.error('Error en el cálculo:', error);
+            toast.error('Ocurrió un error al calcular');
+        } finally {
+            setIsLoading(false);
+            setIsCalculating(false); // Desactivar el estado de carga
+        }
     };
 
     return (
         <Layout>
-
             <Toaster position="top-right" />
             <section className="min-h-screen w-full">
                 <div className="container mx-auto px-4 py-10 md:py-24">
@@ -109,6 +171,16 @@ const Home: React.FC = () => {
                                     <p className="text-md font-sans font-thin text-white">Presupuesto instantáneo en segundos</p>
                                 </div>
 
+                                {/* Mostrar estado de carga o error */}
+                                {isLoadingProducts && (
+                                    <div className="mb-4 flex items-center justify-center text-blue-500">
+                                        <FiLoader className="mr-2 animate-spin" />
+                                        Cargando productos...
+                                    </div>
+                                )}
+
+                                {error && <div className="mb-4 rounded bg-red-100 p-3 text-center text-red-600">{error}</div>}
+
                                 <div className="space-y-5">
                                     <div className="gap-2 lg:flex">
                                         <div>
@@ -118,10 +190,10 @@ const Home: React.FC = () => {
                                                     type="number"
                                                     className="w-full rounded-lg border-b-2 border-gray-200 bg-[rgba(149,190,231,0.3)] px-4 py-3 text-white shadow-sm transition-all outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300"
                                                     value={largo}
-                                                    onChange={(e) => setLargo(e.target.value)}
+                                                    onChange={(e) => setLargo(e.target.value.replace(/[^0-9.]/g, ''))}
                                                     placeholder="Ej: 2.5"
                                                     step="0.01"
-                                                    min="0"
+                                                    min="0.1"
                                                 />
                                             </div>
                                         </div>
@@ -132,10 +204,10 @@ const Home: React.FC = () => {
                                                 type="number"
                                                 className="w-full rounded-lg border-b-2 border-gray-200 bg-[rgba(149,190,231,0.3)] px-4 py-3 text-white shadow-sm transition-all outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300"
                                                 value={alto}
-                                                onChange={(e) => setAlto(e.target.value)}
+                                                onChange={(e) => setAlto(e.target.value.replace(/[^0-9.]/g, ''))}
                                                 placeholder="Ej: 1.8"
                                                 step="0.01"
-                                                min="0"
+                                                min="0.1"
                                             />
                                         </div>
                                     </div>
@@ -184,12 +256,12 @@ const Home: React.FC = () => {
                                             <label className="mt-3 mb-2 block font-serif text-sm font-medium text-gray-100">Tipo de LED</label>
                                             <select
                                                 value={selectedLed.id}
-                                               onChange={(e) => {
-                                                    const selected = ledTypes.find(led => led.id === parseInt(e.target.value));
+                                                onChange={(e) => {
+                                                    const selected = ledTypes.find((led) => led.id === parseInt(e.target.value));
                                                     if (selected) {
                                                         setSelectedLed(selected);
                                                     }
-                                                    }}
+                                                }}
                                                 className="block w-full rounded-lg border border-gray-200 bg-white py-3 pr-10 pl-4 text-sm shadow-sm transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-300 focus:outline-none"
                                             >
                                                 {ledTypes.map((led) => (
@@ -202,10 +274,29 @@ const Home: React.FC = () => {
                                     </div>
 
                                     <div className="pt-2">
-                                        <button
+                                        <motion.button
                                             onClick={handleCalcular}
-                                            disabled={isLoading}
-                                            className={`flex w-full transform items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 font-medium text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-[0.98] ${isLoading ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'} `}
+                                            disabled={isLoading || isLoadingProducts || !!error}
+                                            animate={
+                                                !isLoading
+                                                    ? {
+                                                          scale: [1, 1, 1.02],
+                                                      }
+                                                    : {}
+                                            }
+                                            transition={
+                                                !isLoading
+                                                    ? {
+                                                          duration: 1.5,
+                                                          ease: 'easeInOut',
+                                                          repeat: Infinity,
+                                                          repeatType: 'mirror',
+                                                      }
+                                                    : {}
+                                            }
+                                            className={`flex w-full transform items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 font-medium text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-[0.98] ${
+                                                isLoading || isLoadingProducts || error ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+                                            }`}
                                         >
                                             {isLoading ? (
                                                 <>
@@ -214,11 +305,11 @@ const Home: React.FC = () => {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <FiCheckCircle className="mr-2 transition-transform duration-300 group-hover:scale-110" />
+                                                    <FiCheckCircle className="mr-2" />
                                                     Calcular Precio
                                                 </>
                                             )}
-                                        </button>
+                                        </motion.button>
                                     </div>
                                 </div>
 
@@ -238,9 +329,17 @@ const Home: React.FC = () => {
                             </motion.div>
                         </div>
 
+                        {/* Overlay de carga durante el cálculo */}
+                        {isCalculating && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">
+                                <div className="flex flex-col items-center">
+                                    <div className="h-16 w-16 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                                    <p className="mt-4 text-xl font-semibold text-white">Procesando tu cálculo...</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Texto descriptivo */}
-
-
                         <div className={`${isMobile ? 'order-1 mb-8 w-full' : 'order-2 w-1/2'} space-y-6 text-center lg:text-left`}>
                             <motion.h1
                                 initial={{ opacity: 0, x: -20 }}
@@ -253,7 +352,7 @@ const Home: React.FC = () => {
 
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}>
                                 <p className="text-xl font-medium text-blue-600 md:text-2xl">SOLUCIONES A MEDIDA PARA TU PROYECTO</p>
-                                <p className="mt-2 text-xl font-bold text-blue-800 md:text-2xl">CALIDAD GARANTIZADA</p>
+                                <p className="mt-2 text-xl font-bold text-blue-700 md:text-2xl">CALIDAD GARANTIZADA</p>
                             </motion.div>
 
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 }} className="pt-4">

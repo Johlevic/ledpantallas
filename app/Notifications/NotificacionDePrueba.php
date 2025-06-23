@@ -9,7 +9,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-class NotificacionDePrueba extends Notification
+class NotificacionDePrueba extends Notification implements ShouldQueue
+
 {
     use Queueable;
 
