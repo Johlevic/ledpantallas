@@ -1,6 +1,7 @@
 # LED-WEB - Sistema de Gestión Web
 
-![Banner de la aplicación](https://via.placeholder.com/1200x300?text=LED-WEB+System)
+![Banner de la aplicación]([https://via.placeholder.com/1200x300?text=LED-WEB+System](https://postimg.cc/nMTdLx0f))
+
 
 ## 🚀 Descripción del Proyecto
 
