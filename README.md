@@ -72,7 +72,7 @@ Asegúrate de tener instalado lo siguiente:
 1.  **Clonar el repositorio:**
     Abre tu terminal (PowerShell en Windows, o tu terminal favorita) y clona el proyecto:
     ```bash
-    git clone [https://github.com/Johlevic/led-web.git](https://github.com/Johlevic/led-web.git)
+    git clone [https://github.com/Johlevic/led-web.git](https://github.com/Johlevic/led-pantallas.git)
     cd led-web
     ```
 
