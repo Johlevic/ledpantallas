@@ -1,4 +1,5 @@
 # LED-WEB - Sistema de Gestión Web
+
 ![Banner de la aplicación](https://i.postimg.cc/5NWDnNzy/Whats-App-Image-2025-07-10-at-2-19-23-AM.jpg)
 
 ## 🚀 Descripción del Proyecto
@@ -29,6 +30,12 @@ LED-WEB es una aplicación web integral diseñada para la gestión de **producto
     * Ej: Gestión de Pedidos/Ventas
     * Ej: Informes y Estadísticas
     * Ej: Integraciones con terceros
+
+## 📸 Galería de Capturas de Pantalla
+
+Puedes ver más capturas de pantalla de la aplicación en la siguiente galería:
+
+[Ver Galería de Capturas de Pantalla](https://postimg.cc/gallery/tx5KNgw)
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -71,8 +78,8 @@ Asegúrate de tener instalado lo siguiente:
 1.  **Clonar el repositorio:**
     Abre tu terminal (PowerShell en Windows, o tu terminal favorita) y clona el proyecto:
     ```bash
-    git clone [https://github.com/Johlevic/led-web.git](https://github.com/Johlevic/led-pantallas.git)
-    cd led-pantallas
+    git clone [https://github.com/Johlevic/led-web.git](https://github.com/Johlevic/led-web.git)
+    cd led-web
     ```
 
 2.  **Configuración del Backend (Laravel):**
@@ -169,8 +176,3 @@ Si deseas contribuir a este proyecto, por favor sigue estos pasos:
 ## 📄 Licencia
 
 Este proyecto está bajo la licencia [**Menciona tu tipo de licencia aquí, ej. MIT, GNU GPL, etc.**]. Consulta el archivo `LICENSE` para más detalles.
-
----
-
-¡Listo! Este `README.md` es mucho más específico y útil ahora.
-
