@@ -73,7 +73,7 @@ Asegúrate de tener instalado lo siguiente:
     Abre tu terminal (PowerShell en Windows, o tu terminal favorita) y clona el proyecto:
     ```bash
     git clone [https://github.com/Johlevic/led-web.git](https://github.com/Johlevic/led-pantallas.git)
-    cd led-web
+    cd led-pantallas
     ```
 
 2.  **Configuración del Backend (Laravel):**
